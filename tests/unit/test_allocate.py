@@ -31,7 +31,7 @@ def test_prefers_earlier_batches():
     assert latest.available_quantity == 100
 
 
-def test_returns_allocated_batch_id():
+def test_returns_allocated_batch_ref():
     warehouse_batch = Batch('wh-batch', 'sku1', 100, eta=None)
     shipment_batch = Batch('sh-batch', 'sku1', 100, eta=tomorrow)
     line = OrderLine('oref', 'sku1', 10)
