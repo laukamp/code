@@ -49,3 +49,11 @@ def test_raises_out_of_stock_exception_if_cannot_allocate():
 
     with pytest.raises(OutOfStock, match='sku2'):
         product.allocate(sku2_line)
+
+
+def test_increments_version_number():
+    line = OrderLine('oref', 'sku1', 10)
+    product = Product(sku='sku1', batches=[Batch('b1', 'sku1', 100, eta=None)])
+    product.version_number = 7
+    product.allocate(line)
+    assert product.version_number == 8
