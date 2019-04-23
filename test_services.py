@@ -32,6 +32,12 @@ class FakeSession():
         self.committed = True
 
 
+def test_add_batch():
+    repo, session = FakeRepository([]), FakeSession()
+    services.add_batch('b1', 'sku1', 100, None, repo, session)
+    assert repo.get('b1') is not None
+    assert session.committed
+
 def test_returns_allocation():
     repo = FakeRepository.for_batch('b1', 'sku1', 100, eta=None)
     result = services.allocate('o1', 'sku1', 10, repo, FakeSession())
@@ -48,6 +54,5 @@ def test_error_for_invalid_sku():
 def test_commits():
     repo = FakeRepository.for_batch('b1', 'sku1', 100, eta=None)
     session = FakeSession()
-
     services.allocate('o1', 'sku1', 10, repo, session)
     assert session.committed is True
