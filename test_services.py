@@ -6,12 +6,6 @@ import services
 
 class FakeRepository(repository.AbstractRepository):
 
-    @staticmethod
-    def for_batch(ref, sku, qty, eta=None):
-        return FakeRepository([
-            model.Batch(ref, sku, qty, eta),
-        ])
-
     def __init__(self, batches):
         self._batches = set(batches)
 
@@ -38,21 +32,25 @@ def test_add_batch():
     assert repo.get('b1') is not None
     assert session.committed
 
-def test_returns_allocation():
-    repo = FakeRepository.for_batch('b1', 'sku1', 100, eta=None)
-    result = services.allocate('o1', 'sku1', 10, repo, FakeSession())
+
+def test_allocate_returns_allocation():
+    repo, session = FakeRepository([]), FakeSession()
+    services.add_batch('b1', 'sku1', 100, None, repo, session)
+    result = services.allocate('o1', 'sku1', 10, repo, session)
     assert result == 'b1'
 
 
-def test_error_for_invalid_sku():
-    repo = FakeRepository.for_batch('b1', 'actualsku', 100, eta=None)
+def test_allocate_errors_for_invalid_sku():
+    repo, session = FakeRepository([]), FakeSession()
+    services.add_batch('b1', 'actualsku', 100, None, repo, session)
 
     with pytest.raises(services.InvalidSku, match='Invalid sku nonexistentsku'):
         services.allocate('o1', 'nonexistentsku', 10, repo, FakeSession())
 
 
 def test_commits():
-    repo = FakeRepository.for_batch('b1', 'sku1', 100, eta=None)
+    repo, session = FakeRepository([]), FakeSession()
     session = FakeSession()
+    services.add_batch('b1', 'sku1', 100, None, repo, session)
     services.allocate('o1', 'sku1', 10, repo, session)
     assert session.committed is True
