@@ -7,15 +7,23 @@ import config
 def random_ref(prefix):
     return prefix + '-' + uuid.uuid4().hex[:10]
 
+def post_to_add_batch(ref, sku, qty, eta):
+    url = config.get_api_url()
+    r = requests.post(
+        f'{url}/add_batch',
+        json={'ref': ref, 'sku': sku, 'qty': qty, 'eta': eta}
+    )
+    assert r.status_code == 201
+
+
+@pytest.mark.usefixtures('postgres_db')
 @pytest.mark.usefixtures('restart_api')
-def test_happy_path_returns_201_and_allocated_batch(add_stock):
+def test_happy_path_returns_201_and_allocated_batch():
     sku, othersku = random_ref('s1'), random_ref('s2')
     batch1, batch2, batch3 = random_ref('b1'), random_ref('b2'), random_ref('b3')
-    add_stock([
-        (batch1, sku, 100, '2011-01-02'),
-        (batch2, sku, 100, '2011-01-01'),
-        (batch3, othersku, 100, None),
-    ])
+    post_to_add_batch(batch1, sku, 100, '2011-01-02')
+    post_to_add_batch(batch2, sku, 100, '2011-01-01')
+    post_to_add_batch(batch3, othersku, 100, None)
     data = {
         'orderid': random_ref('o'),
         'sku': sku,
@@ -27,6 +35,7 @@ def test_happy_path_returns_201_and_allocated_batch(add_stock):
     assert r.json()['batchref'] == batch2
 
 
+@pytest.mark.usefixtures('postgres_db')
 @pytest.mark.usefixtures('restart_api')
 def test_unhappy_path_returns_400_and_error_message():
     sku, order = random_ref('s'), random_ref('o')
