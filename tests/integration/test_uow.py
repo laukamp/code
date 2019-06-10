@@ -1,7 +1,6 @@
 import uuid
 import pytest
-from allocation import model
-from allocation import unit_of_work
+from allocation import bootstrap, model, unit_of_work
 
 def random_ref(prefix):
     return prefix + '-' + uuid.uuid4().hex[:10]
@@ -75,10 +74,10 @@ import threading
 import traceback
 import time
 
-def try_to_allocate(orderid, sku, exceptions):
+def try_to_allocate(orderid, sku, exceptions, session_factory):
     line = model.OrderLine(orderid, sku, 10)
     try:
-        with unit_of_work.SqlAlchemyUnitOfWork() as uow:
+        with unit_of_work.SqlAlchemyUnitOfWork(session_factory) as uow:
             product = uow.products.get(sku=sku)
             product.allocate(line)
             time.sleep(0.2)
@@ -96,8 +95,8 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory)
 
     exceptions = []
     o1, o2 = random_ref('o1'), random_ref('o2')
-    target1 = lambda: try_to_allocate(o1, sku, exceptions)
-    target2 = lambda: try_to_allocate(o2, sku, exceptions)
+    target1 = lambda: try_to_allocate(o1, sku, exceptions, postgres_session_factory)
+    target2 = lambda: try_to_allocate(o2, sku, exceptions, postgres_session_factory)
     t1 = threading.Thread(target=target1)
     t2 = threading.Thread(target=target2)
     t1.start()
@@ -121,6 +120,6 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory)
         dict(sku=sku),
     ))
     assert len(orders) == 1
-    with unit_of_work.SqlAlchemyUnitOfWork() as uow:
+    with unit_of_work.SqlAlchemyUnitOfWork(postgres_session_factory) as uow:
         uow.session.execute('select 1')
 
