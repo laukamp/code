@@ -1,19 +1,17 @@
 # pylint: disable=redefined-outer-name
 from datetime import date
 from unittest import mock
-from sqlalchemy.orm import sessionmaker, clear_mappers
 import pytest
-from allocation import bootstrap, commands, views
+from allocation import commands, messagebus, unit_of_work, views
 
 
 @pytest.fixture
-def sqlite_bus(in_memory_sqlite_db):
-    yield bootstrap.bootstrap(
-        session_factory=sessionmaker(bind=in_memory_sqlite_db),
+def sqlite_bus(sqlite_session_factory):
+    return messagebus.MessageBus(
+        uow=unit_of_work.SqlAlchemyUnitOfWork(sqlite_session_factory),
         send_mail=mock.Mock(),
         publish=mock.Mock(),
     )
-    clear_mappers()
 
 
 def test_allocations_view(sqlite_bus):

@@ -37,11 +37,13 @@ class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
 
 
 
-def bootstrap_fake_bus():
-    uow = FakeUnitOfWork()
-    bus = messagebus.MessageBus(uow=uow, send_mail=mock.Mock(), publish=mock.Mock())
-    return bus
-
+class FakeBus(messagebus.MessageBus):
+    def __init__(self):
+        super().__init__(
+            uow=FakeUnitOfWork(),
+            send_mail=mock.Mock(),
+            publish=mock.Mock(),
+        )
 
 
 
@@ -49,14 +51,14 @@ class TestAddBatch:
 
     @staticmethod
     def test_for_new_product():
-        bus = bootstrap_fake_bus()
+        bus = FakeBus()
         bus.handle([commands.CreateBatch('b1', 'sku1', 100, None)])
         assert bus.uow.products.get('sku1') is not None
         assert bus.uow.committed
 
     @staticmethod
     def test_for_existing_product():
-        bus = bootstrap_fake_bus()
+        bus = FakeBus()
         bus.handle([
             commands.CreateBatch('b1', 'sku1', 100, None),
             commands.CreateBatch('b2', 'sku1', 99, None),
@@ -68,7 +70,7 @@ class TestAllocate:
 
     @staticmethod
     def test_allocates():
-        bus = bootstrap_fake_bus()
+        bus = FakeBus()
         bus.handle([
             commands.CreateBatch('b1', 'sku1', 100, None),
             commands.Allocate('o1', 'sku1', 10),
@@ -78,7 +80,7 @@ class TestAllocate:
 
     @staticmethod
     def test_errors_for_invalid_sku():
-        bus = bootstrap_fake_bus()
+        bus = FakeBus()
         bus.handle([commands.CreateBatch('b1', 'actualsku', 100, None)])
 
         with pytest.raises(exceptions.InvalidSku, match='Invalid sku nonexistentsku'):
@@ -88,7 +90,7 @@ class TestAllocate:
 
     @staticmethod
     def test_commits():
-        bus = bootstrap_fake_bus()
+        bus = FakeBus()
         bus.handle([
             commands.CreateBatch('b1', 'sku1', 100, None),
             commands.Allocate('o1', 'sku1', 10),
@@ -97,7 +99,7 @@ class TestAllocate:
 
     @staticmethod
     def test_sends_email_on_out_of_stock_error():
-        bus = bootstrap_fake_bus()
+        bus = FakeBus()
         bus.handle([
             commands.CreateBatch('b1', 'sku1', 9, None),
             commands.Allocate('o1', 'sku1', 10),
@@ -112,7 +114,7 @@ class TestChangeBatchQuantity:
 
     @staticmethod
     def test_changes_available_quantity():
-        bus = bootstrap_fake_bus()
+        bus = FakeBus()
         bus.handle([commands.CreateBatch('b1', 'sku1', 100, None)])
         [batch] = bus.uow.products.get(sku='sku1').batches
         assert batch.available_quantity == 100
@@ -123,7 +125,7 @@ class TestChangeBatchQuantity:
 
     @staticmethod
     def test_reallocates_if_necessary():
-        bus = bootstrap_fake_bus()
+        bus = FakeBus()
         bus.handle([
             commands.CreateBatch('b1', 'sku1', 50, None),
             commands.CreateBatch('b2', 'sku1', 50, date.today()),

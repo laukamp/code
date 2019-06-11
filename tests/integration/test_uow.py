@@ -1,6 +1,12 @@
+# pylint: disable=too-many-arguments
+import threading
+import time
+import traceback
 import uuid
+from typing import List
+
 import pytest
-from allocation import bootstrap, model, unit_of_work
+from allocation import model, unit_of_work
 
 def random_ref(prefix):
     return prefix + '-' + uuid.uuid4().hex[:10]
@@ -70,10 +76,6 @@ def test_rolls_back_on_error(sqlite_session_factory):
     assert rows == []
 
 
-import threading
-import traceback
-import time
-
 def try_to_allocate(orderid, sku, exceptions, session_factory):
     line = model.OrderLine(orderid, sku, 10)
     try:
@@ -82,7 +84,7 @@ def try_to_allocate(orderid, sku, exceptions, session_factory):
             product.allocate(line)
             time.sleep(0.2)
             uow.commit()
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-except
         print(traceback.format_exc())
         exceptions.append(e)
 
@@ -93,7 +95,7 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory)
     insert_batch(session, batch, sku, 100, eta=None, product_version=3)
     session.commit()
 
-    exceptions = []
+    exceptions = []  # type: List[Exception]
     o1, o2 = random_ref('o1'), random_ref('o2')
     target1 = lambda: try_to_allocate(o1, sku, exceptions, postgres_session_factory)
     target2 = lambda: try_to_allocate(o2, sku, exceptions, postgres_session_factory)

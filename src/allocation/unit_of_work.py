@@ -1,9 +1,11 @@
 # pylint: disable=attribute-defined-outside-init
 from __future__ import annotations
 import abc
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
-from allocation import repository
+from allocation import config, repository
 
 
 
@@ -17,6 +19,7 @@ class AbstractUnitOfWork(abc.ABC):
 
     def commit(self):
         self._commit()
+
 
     @abc.abstractmethod
     def _commit(self):
@@ -40,9 +43,14 @@ class AbstractUnitOfWork(abc.ABC):
 
 
 
+DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine(
+    config.get_postgres_uri(),
+    isolation_level="SERIALIZABLE",
+))
+
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
 
-    def __init__(self, session_factory):
+    def __init__(self, session_factory=DEFAULT_SESSION_FACTORY):
         self.session = session_factory()  # type: Session
         self.init_repositories(repository.SqlAlchemyRepository(self.session))
 

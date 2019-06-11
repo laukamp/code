@@ -1,3 +1,4 @@
+# pylint: disable=bare-except
 from __future__ import annotations
 import inspect
 import traceback
@@ -76,5 +77,4 @@ COMMAND_HANDLERS = {
     commands.CreateBatch: handlers.add_batch,
     commands.ChangeBatchQuantity: handlers.change_batch_quantity,
 }  # type: Dict[Type[commands.Command], Callable]
-
 
