@@ -11,12 +11,10 @@ class Notifications(abc.ABC):
         raise NotImplementedError
 
 
-DEFAULT_HOST = config.get_email_host_and_port()['host']
-DEFAULT_PORT = config.get_email_host_and_port()['port']
 
 class EmailNotifications(Notifications):
 
-    def __init__(self, smtp_host=DEFAULT_HOST, port=DEFAULT_PORT):
+    def __init__(self, smtp_host, port):
         self.server = smtplib.SMTP(smtp_host, port=port)
         self.server.noop()
 

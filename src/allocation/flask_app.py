@@ -1,18 +1,9 @@
 from datetime import datetime
 from flask import Flask, jsonify, request
-from allocation import (
-    commands, exceptions, messagebus, notifications, orm, redis_pubsub,
-    unit_of_work, views,
-)
+from allocation import bootstrap, commands, exceptions, views
 
 app = Flask(__name__)
-orm.start_mappers()
-bus = messagebus.MessageBus(
-    uow=unit_of_work.SqlAlchemyUnitOfWork(),
-    notifications=notifications.EmailNotifications(),
-    publish=redis_pubsub.publish
-)
-
+bus = bootstrap.bootstrap()
 
 
 @app.route("/add_batch", methods=['POST'])

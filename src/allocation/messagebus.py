@@ -78,3 +78,4 @@ COMMAND_HANDLERS = {
     commands.ChangeBatchQuantity: handlers.change_batch_quantity,
 }  # type: Dict[Type[commands.Command], Callable]
 
+
