@@ -59,13 +59,14 @@ class TestAddBatch:
 class TestAllocate:
 
     @staticmethod
-    def test_returns_allocation():
+    def test_allocates():
         uow = FakeUnitOfWork()
-        results = messagebus.handle([
+        messagebus.handle([
             commands.CreateBatch('b1', 'sku1', 100, None),
-            commands.Allocate('o1', 'sku1', 10 )
+            commands.Allocate('o1', 'sku1', 10),
         ], uow)
-        assert results.pop() == 'b1'
+        [batch] = uow.products.get('sku1').batches
+        assert batch.available_quantity == 90
 
     @staticmethod
     def test_errors_for_invalid_sku():
