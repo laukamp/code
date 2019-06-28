@@ -51,6 +51,7 @@ def test_raises_out_of_stock_exception_if_cannot_allocate():
         product.allocate(sku2_line)
 
 
+@pytest.mark.skip
 def test_increments_version_number():
     line = OrderLine('oref', 'sku1', 10)
     product = Product(sku='sku1', batches=[Batch('b1', 'sku1', 100, eta=None)])

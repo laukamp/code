@@ -7,10 +7,9 @@ def random_ref(prefix):
     return prefix + '-' + uuid.uuid4().hex[:10]
 
 def insert_batch(session, ref, sku, qty, eta, product_version=1):
-    session.execute(
-        'INSERT INTO products (sku, version_number) VALUES (:sku, :version)',
-        dict(sku=sku, version=product_version),
-    )
+    # session.execute(
+    #     'INSERT INTO products ...?
+    # )
     session.execute(
         'INSERT INTO batches (reference, sku, _purchased_quantity, eta)'
         ' VALUES (:ref, :sku, :qty, :eta)',
@@ -88,6 +87,7 @@ def try_to_allocate(orderid, sku, exceptions):
         exceptions.append(e)
 
 
+@pytest.mark.skip('do this for an advanced challenge')
 def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory):
     sku, batch = random_ref('s'), random_ref('b')
     session = postgres_session_factory()
