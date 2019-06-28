@@ -50,7 +50,23 @@ def test_allocate_errors_for_invalid_sku():
 
 def test_commits():
     repo, session = FakeRepository([]), FakeSession()
-    session = FakeSession()
     services.add_batch('b1', 'sku1', 100, None, repo, session)
     services.allocate('o1', 'sku1', 10, repo, session)
     assert session.committed is True
+
+
+def test_deallocate_decrements_available_quantity():
+    repo, session = FakeRepository([]), FakeSession()
+    services.add_batch('b1', 'sku1', 100, None, repo, session)
+    services.allocate('o1', 'sku1', 10, repo, session)
+    batch = repo.get(reference='b1')
+    assert batch.available_quantity == 90
+    # services.deallocate(...
+    ...
+    assert  batch.available_quantity == 100
+
+def test_deallocate_decrements_correct_quantity():
+    ... #  TODO
+
+def test_trying_to_deallocate_unallocated_batch():
+    ... #  TODO: should this error or pass silently? up to you.
