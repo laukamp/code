@@ -20,32 +20,31 @@ def _noop(*args, **kwargs):
 class Actor:
     def __init__(self, message):
         self.message = message
-        self.things_that_happened = []
         self.uow = SqlAlchemyUnitOfWork()
 
     @classmethod
     def handle_message(cls, message):
-        # NOTE: Preferable to move the uow scope here!
         actor = cls(message)
-        actor.run_to_completion()
-        return actor.things_that_happened
+        return actor.run_to_completion()
 
     def run_to_completion(self):
         messages = [self.message]
+        history = []
         with self.uow:
             while messages:
                 message = messages.pop(0)
                 if isinstance(message, events.Event):
                     pending = list(self._dispatch_event(message))
                     messages.extend(pending)
-                    self.things_that_happened.extend(pending)
+                    history.extend(pending)
                 elif isinstance(message, commands.Command):
                     pending = list(self._dispatch_command(message))
                     messages.extend(pending)
-                    self.things_that_happened.extend(pending)
+                    history.extend(pending)
                 else:
                     raise Exception(f'{message} was not an Event or Command')
             self.uow.commit()
+            return history
 
     def _dispatch_command(self, message):
         raise NotImplementedError()
@@ -59,7 +58,9 @@ class ProductActor(Actor):
         bus.register_handler(cls.handle_message, commands.ChangeBatchQuantity)
         bus.register_handler(cls.handle_message, commands.Allocate)
         bus.register_handler(cls.handle_message, commands.CreateBatch)
-        bus.register_handler(cls.handle_message, events.Deallocated)
+
+        # Not necessary, since this is an "internal event"
+        # bus.register_handler(cls.handle_message, events.Deallocated)
 
     def _dispatch_command(self, command: commands.Command):
         logger.debug('handling command %s', command)
@@ -81,7 +82,7 @@ class ProductActor(Actor):
             logger.debug("Product doesn't know what to do with %s" % event)
         return self.uow.collect_new_events()
 
-class TheExternalWorld(Actor): # Basically "the external message bus"
+class TheExternalWorld(Actor): # Basically "the outside world/other contexts/etc."
     external_publisher = _noop
     notifications = _noop
 
